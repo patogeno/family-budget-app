@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "babel-standalone": "^6.26.0",
+    "node-sass": "^9.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "name": "family_budget",
+  "description": "This is a localhost web application for personal use to manage the family's fortnightly, monthly, and yearly budget and expenses more effectively. The app allows tracking income sources, categorizing expenses, setting budgets for different expense categories, and analyzing spending patterns over time.",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Patricio Soto Kort",
+  "license": "ISC"
+}
