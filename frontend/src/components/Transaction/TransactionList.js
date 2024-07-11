@@ -10,7 +10,7 @@ function TransactionList() {
   const [budgetGroups, setBudgetGroups] = useState([]);
   const [accountNames, setAccountNames] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [transactionsPerPage] = useState(10);
+  const [transactionsPerPage, setTransactionsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   // Add state for filters
@@ -134,6 +134,59 @@ function TransactionList() {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const renderPaginationButtons = () => {
+    const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+    let buttons = [];
+
+    if (totalPages <= 10) {
+      for (let i = 1; i <= totalPages; i++) {
+        buttons.push(
+          <button key={i} onClick={() => paginate(i)} className={currentPage === i ? 'active' : ''}>
+            {i}
+          </button>
+        );
+      }
+    } else {
+      // Always show first page
+      buttons.push(
+        <button key={1} onClick={() => paginate(1)} className={currentPage === 1 ? 'active' : ''}>
+          1
+        </button>
+      );
+
+      if (currentPage > 4) {
+        buttons.push(<span key="ellipsis1">...</span>);
+      }
+
+      // Show pages around current page
+      for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
+        buttons.push(
+          <button key={i} onClick={() => paginate(i)} className={currentPage === i ? 'active' : ''}>
+            {i}
+          </button>
+        );
+      }
+
+      if (currentPage < totalPages - 3) {
+        buttons.push(<span key="ellipsis2">...</span>);
+      }
+
+      // Always show last page
+      buttons.push(
+        <button key={totalPages} onClick={() => paginate(totalPages)} className={currentPage === totalPages ? 'active' : ''}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
+  const handleTransactionsPerPageChange = (e) => {
+    setTransactionsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
@@ -191,6 +244,16 @@ function TransactionList() {
           ))}
         </select>
         <button onClick={clearAllFilters} className="clear-filters-btn">Clear All Filters</button>
+        <select
+          value={transactionsPerPage}
+          onChange={handleTransactionsPerPageChange}
+          className="transactions-per-page"
+        >
+          <option value={10}>10 per page</option>
+          <option value={25}>25 per page</option>
+          <option value={50}>50 per page</option>
+          <option value={100}>100 per page</option>
+        </select>
       </div>
       <table>
         <thead>
@@ -217,11 +280,7 @@ function TransactionList() {
         </tbody>
       </table>
       <div className="pagination">
-        {Array.from({ length: Math.ceil(filteredTransactions.length / transactionsPerPage) }, (_, i) => (
-          <button key={i} onClick={() => paginate(i + 1)}>
-            {i + 1}
-          </button>
-        ))}
+        {renderPaginationButtons()}
       </div>
     </div>
   );
