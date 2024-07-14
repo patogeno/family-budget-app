@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getPaginatedTransactions, getTransactionTypes, getBudgetGroups, getAccountNames } from '../../services/api';
+import debounce from 'lodash/debounce';
 
 function TransactionList() {
   const [transactions, setTransactions] = useState([]);
@@ -29,12 +30,7 @@ function TransactionList() {
         per_page: transactionsPerPage,
         sort_by: sortConfig.key,
         sort_direction: sortConfig.direction,
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
-        description: filters.description,
-        type: filters.type,
-        budget: filters.budget,
-        account: filters.account
+        ...filters
       };
       const response = await getPaginatedTransactions(params);
       setTransactions(response.data.transactions);
@@ -46,9 +42,15 @@ function TransactionList() {
     }
   }, [currentPage, transactionsPerPage, sortConfig, filters]);
 
+  const debouncedFetchTransactions = useMemo(
+    () => debounce(fetchTransactions, 700),
+    [fetchTransactions]
+  );
+
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    debouncedFetchTransactions();
+    return () => debouncedFetchTransactions.cancel();
+  }, [debouncedFetchTransactions]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,7 +73,7 @@ function TransactionList() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    setCurrentPage(1);  // Reset to first page when changing filters
+    setCurrentPage(1);
   };
 
   const clearAllFilters = () => {
