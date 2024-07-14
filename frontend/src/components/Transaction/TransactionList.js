@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getPaginatedTransactions, getTransactionTypes, getBudgetGroups, getAccountNames } from '../../services/api';
 import debounce from 'lodash/debounce';
 
@@ -21,6 +21,13 @@ function TransactionList() {
     budget: '',
     account: ''
   });
+  
+  const [dateInputs, setDateInputs] = useState({
+    dateFrom: '',
+    dateTo: ''
+  });
+
+  const dateTimeoutRef = useRef(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -76,6 +83,31 @@ function TransactionList() {
     setCurrentPage(1);
   };
 
+  const handleDateInputChange = (e) => {
+    const { name, value } = e.target;
+    setDateInputs(prev => ({ ...prev, [name]: value }));
+
+    // Clear any existing timeout
+    if (dateTimeoutRef.current) {
+      clearTimeout(dateTimeoutRef.current);
+    }
+
+    dateTimeoutRef.current = setTimeout(() => {
+      setFilters(prev => ({ ...prev, [name]: value }));
+      setCurrentPage(1);
+    }, 700);
+  };
+
+  const applyDateFilter = (e) => {
+    const { name, value } = e.target;
+    // Clear any existing timeout
+    if (dateTimeoutRef.current) {
+      clearTimeout(dateTimeoutRef.current);
+    }
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setCurrentPage(1);
+  };
+
   const clearAllFilters = () => {
     setFilters({
       dateFrom: '',
@@ -85,8 +117,21 @@ function TransactionList() {
       budget: '',
       account: ''
     });
+    setDateInputs({
+      dateFrom: '',
+      dateTo: ''
+    });
     setCurrentPage(1);
   };
+
+  // Cleanup function to clear the timeout when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (dateTimeoutRef.current) {
+        clearTimeout(dateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -167,14 +212,16 @@ function TransactionList() {
         <input
           type="date"
           name="dateFrom"
-          value={filters.dateFrom}
-          onChange={handleFilterChange}
+          value={dateInputs.dateFrom}
+          onChange={handleDateInputChange}
+          onBlur={applyDateFilter}
         />
         <input
           type="date"
           name="dateTo"
-          value={filters.dateTo}
-          onChange={handleFilterChange}
+          value={dateInputs.dateTo}
+          onChange={handleDateInputChange}
+          onBlur={applyDateFilter}
         />
         <input
           type="text"
