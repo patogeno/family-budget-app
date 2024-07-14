@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getTransactions, getTransactionTypes, getBudgetGroups, getAccountNames } from '../../services/api';
+import { getPaginatedTransactions, getTransactionTypes, getBudgetGroups, getAccountNames } from '../../services/api';
 
 function TransactionList() {
   const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [transactionTypes, setTransactionTypes] = useState([]);
@@ -11,9 +10,8 @@ function TransactionList() {
   const [accountNames, setAccountNames] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [transactionsPerPage, setTransactionsPerPage] = useState(10);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-
-  // Add state for filters
+  const [totalPages, setTotalPages] = useState(0);
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -23,69 +21,57 @@ function TransactionList() {
     account: ''
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
     try {
-      const [transactionsResponse, typesResponse, groupsResponse, accountsResponse] = await Promise.all([
-        getTransactions(),
-        getTransactionTypes(),
-        getBudgetGroups(),
-        getAccountNames()
-      ]);
-      setTransactions(transactionsResponse.data);
-      setTransactionTypes(typesResponse.data);
-      setBudgetGroups(groupsResponse.data);
-      setAccountNames(accountsResponse.data);
+      const params = {
+        page: currentPage,
+        per_page: transactionsPerPage,
+        sort_by: sortConfig.key,
+        sort_direction: sortConfig.direction,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        description: filters.description,
+        type: filters.type,
+        budget: filters.budget,
+        account: filters.account
+      };
+      const response = await getPaginatedTransactions(params);
+      setTransactions(response.data.transactions);
+      setTotalPages(response.data.total_pages);
       setLoading(false);
     } catch (err) {
-      setError('Failed to fetch data');
+      setError('Failed to fetch transactions');
       setLoading(false);
     }
-  };
-
-  const applyFilters = useCallback(() => {
-    let filtered = transactions;
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(t => new Date(t.date) >= new Date(filters.dateFrom));
-    }
-    if (filters.dateTo) {
-      filtered = filtered.filter(t => new Date(t.date) <= new Date(filters.dateTo));
-    }
-    if (filters.description) {
-      filtered = filtered.filter(t => 
-        t.description.toLowerCase().includes(filters.description.toLowerCase())
-      );
-    }
-    if (filters.type) {
-      filtered = filtered.filter(t => 
-        t.transaction_type && t.transaction_type.toString() === filters.type
-      );
-    }
-    if (filters.budget) {
-      filtered = filtered.filter(t => 
-        t.budget_group && t.budget_group.toString() === filters.budget
-      );
-    }
-    if (filters.account) {
-      filtered = filtered.filter(t => 
-        t.account_name && t.account_name.toString() === filters.account
-      );
-    }
-
-    setFilteredTransactions(filtered);
-  }, [transactions, filters]);
+  }, [currentPage, transactionsPerPage, sortConfig, filters]);
 
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [typesResponse, groupsResponse, accountsResponse] = await Promise.all([
+          getTransactionTypes(),
+          getBudgetGroups(),
+          getAccountNames()
+        ]);
+        setTransactionTypes(typesResponse.data);
+        setBudgetGroups(groupsResponse.data);
+        setAccountNames(accountsResponse.data);
+      } catch (err) {
+        setError('Failed to fetch data');
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+    setCurrentPage(1);  // Reset to first page when changing filters
   };
 
   const clearAllFilters = () => {
@@ -97,6 +83,15 @@ function TransactionList() {
       budget: '',
       account: ''
     });
+    setCurrentPage(1);
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }));
+    setCurrentPage(1);
   };
 
   const getAmountClass = (amount) => {
@@ -111,45 +106,20 @@ function TransactionList() {
     return '';
   };
 
-  const sortTransactions = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-
-    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'ascending' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'ascending' ? 1 : -1;
-      return 0;
-    });
-
-    setFilteredTransactions(sortedTransactions);
-  };
-
-  // Pagination
-  const indexOfLastTransaction = currentPage * transactionsPerPage;
-  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
-  const currentTransactions = filteredTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   const renderPaginationButtons = () => {
-    const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
     let buttons = [];
 
     if (totalPages <= 10) {
       for (let i = 1; i <= totalPages; i++) {
         buttons.push(
-          <button key={i} onClick={() => paginate(i)} className={currentPage === i ? 'active' : ''}>
+          <button key={i} onClick={() => setCurrentPage(i)} className={currentPage === i ? 'active' : ''}>
             {i}
           </button>
         );
       }
     } else {
-      // Always show first page
       buttons.push(
-        <button key={1} onClick={() => paginate(1)} className={currentPage === 1 ? 'active' : ''}>
+        <button key={1} onClick={() => setCurrentPage(1)} className={currentPage === 1 ? 'active' : ''}>
           1
         </button>
       );
@@ -158,10 +128,9 @@ function TransactionList() {
         buttons.push(<span key="ellipsis1">...</span>);
       }
 
-      // Show pages around current page
       for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
         buttons.push(
-          <button key={i} onClick={() => paginate(i)} className={currentPage === i ? 'active' : ''}>
+          <button key={i} onClick={() => setCurrentPage(i)} className={currentPage === i ? 'active' : ''}>
             {i}
           </button>
         );
@@ -171,9 +140,8 @@ function TransactionList() {
         buttons.push(<span key="ellipsis2">...</span>);
       }
 
-      // Always show last page
       buttons.push(
-        <button key={totalPages} onClick={() => paginate(totalPages)} className={currentPage === totalPages ? 'active' : ''}>
+        <button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={currentPage === totalPages ? 'active' : ''}>
           {totalPages}
         </button>
       );
@@ -184,7 +152,7 @@ function TransactionList() {
 
   const handleTransactionsPerPageChange = (e) => {
     setTransactionsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -258,16 +226,16 @@ function TransactionList() {
       <table>
         <thead>
           <tr>
-            <th onClick={() => sortTransactions('date')}>Date {sortConfig.key === 'date' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
-            <th onClick={() => sortTransactions('description')}>Description {sortConfig.key === 'description' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
-            <th onClick={() => sortTransactions('amount')}>Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
-            <th onClick={() => sortTransactions('account_name')}>Account {sortConfig.key === 'account_name' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
-            <th onClick={() => sortTransactions('budget_group')}>Budget Group {sortConfig.key === 'budget_group' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
-            <th onClick={() => sortTransactions('transaction_type')}>Transaction Type {sortConfig.key === 'transaction_type' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('date')}>Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('description')}>Description {sortConfig.key === 'description' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('amount')}>Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('account_name')}>Account {sortConfig.key === 'account_name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('budget_group')}>Budget Group {sortConfig.key === 'budget_group' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('transaction_type')}>Transaction Type {sortConfig.key === 'transaction_type' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
           </tr>
         </thead>
         <tbody>
-          {currentTransactions.map((transaction) => (
+          {transactions.map((transaction) => (
             <tr key={transaction.id}>
               <td>{transaction.date}</td>
               <td>{transaction.description}</td>

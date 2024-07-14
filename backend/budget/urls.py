@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/create-adjustment-transaction/', views.create_adjustment_transaction, name='create_adjustment_transaction'),
     path('api/transactions/<int:transaction_id>/modify/', views.modify_transaction, name='modify_transaction'),
     path('api/bank-formats/', views.get_bank_formats, name='bank_formats'),
+    path('api/paginated-transactions/', views.get_paginated_transactions, name='paginated_transactions'),
 ]

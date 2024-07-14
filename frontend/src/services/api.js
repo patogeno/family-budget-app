@@ -10,6 +10,9 @@ export const getTransactions = (filter = '') => {
   const endpoint = filter === 'pending_review' ? 'transactions/pending_review/' : 'transactions/';
   return api.get(endpoint);
 };
+export const getPaginatedTransactions = (params) => {
+  return api.get('paginated-transactions/', { params });
+};
 export const importTransactions = (data) => api.post('import-transactions/', data);
 export const reviewTransactions = (data) => api.post('transactions/bulk_confirm/', data);
 export const redoCategorization = () => api.post('transactions/redo_categorization/');
