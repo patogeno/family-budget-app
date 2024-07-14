@@ -1,10 +1,11 @@
 # TODO List
 
 ## 1. Improve Transaction List View
-- [ ] Redesign the transaction list component to match the review section's layout
-- [ ] Implement filters for the transaction list (e.g., by date range, description, amount)
-- [ ] Add sorting functionality for each column in the transaction list
-- [ ] Implement pagination for the transaction list
+- [X] Redesign the transaction list component to match the review section's layout
+- [X] Implement filters for the transaction list (e.g., by date range, description, amount)
+- [X] Add sorting functionality for each column in the transaction list
+- [X] Implement pagination for the transaction list
+- [ ] Implement server-side pagination
 
 ## 2. API Documentation
 - [ ] Set up a tool for API documentation (e.g., Swagger/OpenAPI)
