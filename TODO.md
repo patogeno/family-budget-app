@@ -5,7 +5,7 @@
 - [X] Implement filters for the transaction list (e.g., by date range, description, amount)
 - [X] Add sorting functionality for each column in the transaction list
 - [X] Implement pagination for the transaction list
-- [ ] Implement server-side pagination
+- [X] Implement server-side pagination
 
 ## 2. API Documentation
 - [ ] Set up a tool for API documentation (e.g., Swagger/OpenAPI)
