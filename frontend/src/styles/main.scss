@@ -486,3 +486,103 @@ button {
   color: themed-color('warning');
   font-weight: bold;
 }
+
+// Import form styles
+.import-form {
+  background-color: themed-color('secondary');
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+
+  h2 {
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    color: themed-color('accent');
+    text-align: center;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: block;
+    color: themed-color('accent');
+  }
+
+  .file-input-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .file-label {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: themed-color('accent');
+    color: themed-color('primary');
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: darken(themed-color('accent'), 10%);
+    }
+  }
+
+  .file-name {
+    margin-left: 10px;
+    color: themed-color('accent');
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  select,
+  input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    background-color: lighten(themed-color('secondary'), 2%);
+    color: themed-color('accent');
+    border: none;
+    border-radius: 5px;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 5px themed-color('accent');
+    }
+  }
+
+  .import-button {
+    width: 100%;
+    padding: 15px;
+    background-color: themed-color('warning');
+    color: themed-color('primary');
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: darken(themed-color('warning'), 10%);
+    }
+
+    &:disabled {
+      background-color: lighten(themed-color('warning'), 20%);
+      cursor: not-allowed;
+    }
+  }
+}
+
