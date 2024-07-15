@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { getPaginatedTransactions, reviewTransactions, redoCategorization, getTransactionTypes, getBudgetGroups, modifyTransaction, getAccountNames } from '../../services/api';
+import { getPaginatedTransactions, redoCategorization, getTransactionTypes, getBudgetGroups, modifyTransaction, getAccountNames } from '../../services/api';
 import { usePagination } from '../../hooks/usePagination';
 import { useSorting } from '../../hooks/useSorting';
 import { useFilters } from '../../hooks/useFilters';
@@ -9,6 +9,7 @@ import debounce from 'lodash/debounce';
 
 function TransactionReview() {
   const [transactions, setTransactions] = useState([]);
+  const [modifiedTransactions, setModifiedTransactions] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
@@ -101,14 +102,74 @@ function TransactionReview() {
     );
   };
 
+  const handleModificationChange = (id, field, value) => {
+    setModifiedTransactions(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+        isModified: true
+      }
+    }));
+  };
+
+  const handleConfirm = async (id) => {
+    const transaction = transactions.find(t => t.id === id);
+    const modifiedData = modifiedTransactions[id] || {};
+    
+    let newStatus;
+    let updateData;
+
+    if (modifiedData.isModified) {
+      newStatus = 'modified';
+      updateData = { ...modifiedData, review_status: newStatus };
+      delete updateData.isModified;
+    } else if (transaction.review_status !== 'confirmed') {
+      newStatus = 'confirmed';
+      updateData = { review_status: newStatus };
+    } else {
+      // Transaction is already confirmed and not modified, no action needed
+      return;
+    }
+
+    try {
+      await modifyTransaction(id, updateData);
+      fetchTransactions(); // Refresh the list after modification
+      setModifiedTransactions(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
+      setMessage(`Transaction ${newStatus} successfully`);
+    } catch (err) {
+      setError(`Failed to update transaction: ${err.response?.data?.error || err.message}`);
+    }
+  };
+
   const handleBulkConfirm = async () => {
     try {
-      await reviewTransactions({ transaction_ids: selectedTransactions });
+      const bulkModifications = selectedTransactions.map(id => {
+        transactions.find(t => t.id === id);
+        const modifiedData = modifiedTransactions[id] || {};
+        
+        let updateData;
+        if (modifiedData.isModified) {
+          updateData = { ...modifiedData, review_status: 'modified' };
+          delete updateData.isModified;
+        } else {
+          updateData = { review_status: 'confirmed' };
+        }
+
+        return { id, ...updateData };
+      });
+
+      await Promise.all(bulkModifications.map(mod => modifyTransaction(mod.id, mod)));
       fetchTransactions(); // Refresh the list after bulk confirm
       setSelectedTransactions([]);
-      setMessage('Transactions confirmed successfully');
+      setModifiedTransactions({});
+      setMessage('Transactions updated successfully');
     } catch (err) {
-      setError('Failed to confirm transactions');
+      setError('Failed to update transactions');
     }
   };
 
@@ -119,16 +180,6 @@ function TransactionReview() {
       setMessage('Re-categorization completed successfully');
     } catch (err) {
       setError('Failed to redo categorization');
-    }
-  };
-
-  const handleModify = async (id, modifiedData) => {
-    try {
-      await modifyTransaction(id, modifiedData);
-      fetchTransactions(); // Refresh the list after modification
-      setMessage('Transaction modified successfully');
-    } catch (err) {
-      setError(`Failed to modify transaction: ${err.response?.data?.error || err.message}`);
     }
   };
 
@@ -182,8 +233,8 @@ function TransactionReview() {
               <td>{accountNames.find(a => a.id === transaction.account_name)?.name || 'Unknown'}</td>
               <td>
                 <select
-                  value={transaction.transaction_type || ''}
-                  onChange={(e) => handleModify(transaction.id, { transaction_type: e.target.value })}
+                  value={modifiedTransactions[transaction.id]?.transaction_type || transaction.transaction_type || ''}
+                  onChange={(e) => handleModificationChange(transaction.id, 'transaction_type', e.target.value)}
                 >
                   <option value="">Select Type</option>
                   {transactionTypes.map(type => (
@@ -193,8 +244,8 @@ function TransactionReview() {
               </td>
               <td>
                 <select
-                  value={transaction.budget_group || ''}
-                  onChange={(e) => handleModify(transaction.id, { budget_group: e.target.value })}
+                  value={modifiedTransactions[transaction.id]?.budget_group || transaction.budget_group || ''}
+                  onChange={(e) => handleModificationChange(transaction.id, 'budget_group', e.target.value)}
                 >
                   <option value="">Select Budget</option>
                   {budgetGroups.map(group => (
@@ -212,12 +263,14 @@ function TransactionReview() {
               <td>
                 <input
                   type="text"
-                  value={transaction.comments || ''}
-                  onChange={(e) => handleModify(transaction.id, { comments: e.target.value })}
+                  value={modifiedTransactions[transaction.id]?.comments || transaction.comments || ''}
+                  onChange={(e) => handleModificationChange(transaction.id, 'comments', e.target.value)}
                 />
               </td>
               <td>
-                <button onClick={() => handleModify(transaction.id, { review_status: 'confirmed' })}>Confirm</button>
+                <button onClick={() => handleConfirm(transaction.id)}>
+                  {modifiedTransactions[transaction.id]?.isModified ? 'Save & Confirm' : 'Confirm'}
+                </button>
               </td>
             </tr>
           ))}
