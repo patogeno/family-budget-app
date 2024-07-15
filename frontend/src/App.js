@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Header from './components/Header';
-import Navigation from './components/Navigation';
-import TransactionList from './components/Transaction/TransactionList';
-import TransactionImport from './components/Transaction/TransactionImport';
-import TransactionPatternImport from './components/Transaction/TransactionPatternImport';
-import TransactionReview from './components/Transaction/TransactionReview';
+import Header from './components/layout/Header';
+import Navigation from './components/layout/Navigation';
+import TransactionList from './pages/transaction/TransactionList';
+import TransactionImport from './pages/transaction/TransactionImport';
+import TransactionPatternImport from './pages/transaction/TransactionPatternImport';
+import TransactionReview from './pages/transaction/TransactionReview';
 import './App.scss';
 
 function App() {
