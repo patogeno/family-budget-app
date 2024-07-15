@@ -295,10 +295,13 @@ def modify_transaction(request, transaction_id):
         transaction.budget_group_id = request.data['budget_group']
     if 'comments' in request.data:
         transaction.comments = request.data['comments']
+    if 'review_status' in request.data:
+        transaction.review_status = request.data['review_status']
     
     transaction.transaction_assignment_type = 'manual'
     transaction.budget_group_assignment_type = 'manual'
-    transaction.review_status = 'modified'
+    if transaction.review_status != 'confirmed':
+        transaction.review_status = 'modified'
     
     transaction.save()
     
@@ -323,6 +326,7 @@ def get_paginated_transactions(request):
     transaction_type = request.GET.get('type')
     budget_group = request.GET.get('budget')
     account = request.GET.get('account')
+    review_status = request.GET.get('review_status')
 
     # Start with all transactions
     transactions = Transaction.objects.all()
@@ -342,6 +346,8 @@ def get_paginated_transactions(request):
         transactions = transactions.filter(budget_group=budget_group)
     if account:
         transactions = transactions.filter(account_name=account)
+    if review_status:
+        transactions = transactions.filter(review_status=review_status)
 
     # Apply sorting
     sort_prefix = '-' if sort_direction == 'desc' else ''

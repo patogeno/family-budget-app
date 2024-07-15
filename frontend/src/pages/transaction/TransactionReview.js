@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { getTransactions, reviewTransactions, redoCategorization, getTransactionTypes, getBudgetGroups, modifyTransaction, getAccountNames } from '../../services/api';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { getPaginatedTransactions, reviewTransactions, redoCategorization, getTransactionTypes, getBudgetGroups, modifyTransaction, getAccountNames } from '../../services/api';
+import { usePagination } from '../../hooks/usePagination';
+import { useSorting } from '../../hooks/useSorting';
+import { useFilters } from '../../hooks/useFilters';
+import { Pagination } from '../../components/common/Pagination';
+import { Filters } from '../../components/common/Filters';
+import debounce from 'lodash/debounce';
 
 function TransactionReview() {
   const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
@@ -12,87 +17,83 @@ function TransactionReview() {
   const [budgetGroups, setBudgetGroups] = useState([]);
   const [accountNames, setAccountNames] = useState([]);
 
-  // Add a ref to store cursor positions
-  const cursorPositions = useRef({});
+  const { 
+    currentPage, 
+    itemsPerPage, 
+    totalPages, 
+    setTotalPages, 
+    handlePageChange, 
+    handleItemsPerPageChange, 
+    itemsPerPageOptions 
+  } = usePagination();
 
-  // Add state for filters
-  const [filters, setFilters] = useState({
+  const { sortConfig, handleSort } = useSorting('date', 'desc');
+
+  const { 
+    filters, 
+    dateInputs, 
+    handleFilterChange, 
+    handleDateInputChange, 
+    applyDateFilter, 
+    clearAllFilters 
+  } = useFilters({
+    dateFrom: '',
+    dateTo: '',
     description: '',
     type: '',
     budget: '',
+    account: '',
     comments: ''
   });
 
-  const applyFilters = useCallback(() => {
-    let filtered = transactions;
-
-    if (filters.description) {
-      filtered = filtered.filter(t => 
-        t.description.toLowerCase().includes(filters.description.toLowerCase())
-      );
-    }
-
-    if (filters.type) {
-      filtered = filtered.filter(t => 
-        t.transaction_type && t.transaction_type.toString() === filters.type
-      );
-    }
-
-    if (filters.budget) {
-      filtered = filtered.filter(t => 
-        t.budget_group && t.budget_group.toString() === filters.budget
-      );
-    }
-
-    if (filters.comments) {
-      filtered = filtered.filter(t => 
-        t.comments && t.comments.toLowerCase().includes(filters.comments.toLowerCase())
-      );
-    }
-
-    setFilteredTransactions(filtered);
-  }, [transactions, filters]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
-
-  const fetchData = async () => {
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
     try {
-      const [transactionsResponse, typesResponse, groupsResponse, accountsResponse] = await Promise.all([
-        getTransactions('pending_review'),
-        getTransactionTypes(),
-        getBudgetGroups(),
-        getAccountNames()
-      ]);
-      setTransactions(transactionsResponse.data);
-      setTransactionTypes(typesResponse.data);
-      setBudgetGroups(groupsResponse.data);
-      setAccountNames(accountsResponse.data);
+      const params = {
+        page: currentPage,
+        per_page: itemsPerPage,
+        sort_by: sortConfig.key,
+        sort_direction: sortConfig.direction,
+        ...filters,
+        review_status: 'pending'
+      };
+      const response = await getPaginatedTransactions(params);
+      setTransactions(response.data.transactions);
+      setTotalPages(response.data.total_pages);
       setLoading(false);
     } catch (err) {
-      setError('Failed to fetch data');
+      setError('Failed to fetch transactions');
       setLoading(false);
     }
-  };
+  }, [currentPage, itemsPerPage, sortConfig.key, sortConfig.direction, filters, setTotalPages]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
+  const debouncedFetchTransactions = useMemo(
+    () => debounce(fetchTransactions, 700),
+    [fetchTransactions]
+  );
 
-  const clearAllFilters = () => {
-    setFilters({
-      description: '',
-      type: '',
-      budget: '',
-      comments: ''
-    });
-  };
+  useEffect(() => {
+    debouncedFetchTransactions();
+    return () => debouncedFetchTransactions.cancel();
+  }, [debouncedFetchTransactions]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [typesResponse, groupsResponse, accountsResponse] = await Promise.all([
+          getTransactionTypes(),
+          getBudgetGroups(),
+          getAccountNames()
+        ]);
+        setTransactionTypes(typesResponse.data);
+        setBudgetGroups(groupsResponse.data);
+        setAccountNames(accountsResponse.data);
+      } catch (err) {
+        setError('Failed to fetch data');
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleSelect = (id) => {
     setSelectedTransactions(prev => 
@@ -103,8 +104,9 @@ function TransactionReview() {
   const handleBulkConfirm = async () => {
     try {
       await reviewTransactions({ transaction_ids: selectedTransactions });
-      setTransactions(prev => prev.filter(t => !selectedTransactions.includes(t.id)));
+      fetchTransactions(); // Refresh the list after bulk confirm
       setSelectedTransactions([]);
+      setMessage('Transactions confirmed successfully');
     } catch (err) {
       setError('Failed to confirm transactions');
     }
@@ -112,72 +114,19 @@ function TransactionReview() {
 
   const handleRedoCategorization = async () => {
     try {
-      const response = await redoCategorization();
-      setTransactions(response.data);
+      await redoCategorization();
+      fetchTransactions(); // Refresh the list after re-categorization
+      setMessage('Re-categorization completed successfully');
     } catch (err) {
       setError('Failed to redo categorization');
     }
   };
 
-  const getAmountClass = (amount) => {
-    const numericAmount = parseFloat(amount);
-    if (numericAmount > 0) {
-      return 'amount-positive';
-    } else if (numericAmount < -500) {
-      return 'amount-negative-high';
-    } else if (numericAmount < -150) {
-      return 'amount-negative-medium';
-    }
-    return '';
-  };
-
-  const handleTypeChange = (id, value) => {
-    setTransactions(prev => prev.map(t => 
-      t.id === id ? {...t, transaction_type: value, transaction_assignment_type: 'manual'} : t
-    ));
-  };
-
-  const handleBudgetChange = (id, value) => {
-    setTransactions(prev => prev.map(t => 
-      t.id === id ? {...t, budget_group: value, budget_group_assignment_type: 'manual'} : t
-    ));
-  };
-
-  const handleCommentChange = (id, value, cursorPosition) => {
-    setTransactions(prev => prev.map(t => 
-      t.id === id ? {...t, comments: value} : t
-    ));
-    // Store the cursor position
-    cursorPositions.current[id] = cursorPosition;
-  };
-
-  // Use this effect to restore cursor positions after render
-  useEffect(() => {
-    Object.keys(cursorPositions.current).forEach(id => {
-      const input = document.querySelector(`input[name="comments-${id}"]`);
-      if (input) {
-        input.setSelectionRange(cursorPositions.current[id], cursorPositions.current[id]);
-      }
-    });
-  });
-
-  const handleModify = async (id) => {
-    const transaction = transactions.find(t => t.id === id);
+  const handleModify = async (id, modifiedData) => {
     try {
-      const response = await modifyTransaction(id, {
-        transaction_type: transaction.transaction_type,
-        budget_group: transaction.budget_group,
-        comments: transaction.comments
-      });
-      
-      if (response.data.success) {
-        setTransactions(prev => prev.filter(t => t.id !== id));
-        setMessage(response.data.message);
-        // Clear the message after 3 seconds
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setError(`Failed to modify transaction: ${response.data.error}`);
-      }
+      await modifyTransaction(id, modifiedData);
+      fetchTransactions(); // Refresh the list after modification
+      setMessage('Transaction modified successfully');
     } catch (err) {
       setError(`Failed to modify transaction: ${err.response?.data?.error || err.message}`);
     }
@@ -196,97 +145,62 @@ function TransactionReview() {
         </button>
         <button onClick={handleRedoCategorization}>Redo Categorization</button>
       </div>
-      <div className="filters">
-        <input
-          type="text"
-          name="description"
-          placeholder="Filter by description"
-          value={filters.description}
-          onChange={handleFilterChange}
-        />
-        <select
-          name="type"
-          value={filters.type}
-          onChange={handleFilterChange}
-        >
-          <option value="">All Types</option>
-          {transactionTypes.map(type => (
-            <option key={type.id} value={type.id}>{type.name}</option>
-          ))}
-        </select>
-        <select
-          name="budget"
-          value={filters.budget}
-          onChange={handleFilterChange}
-        >
-          <option value="">All Budgets</option>
-          {budgetGroups.map(group => (
-            <option key={group.id} value={group.id}>{group.name}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          name="comments"
-          placeholder="Filter by comments"
-          value={filters.comments}
-          onChange={handleFilterChange}
-        />
-        <button onClick={clearAllFilters} className="clear-filters-btn">Clear All Filters</button>
-      </div>
+      <Filters
+        filters={filters}
+        dateInputs={dateInputs}
+        transactionTypes={transactionTypes}
+        budgetGroups={budgetGroups}
+        accountNames={accountNames}
+        onFilterChange={handleFilterChange}
+        onDateInputChange={handleDateInputChange}
+        onDateFilterApply={applyDateFilter}
+        onClearFilters={clearAllFilters}
+        itemsPerPage={itemsPerPage}
+        itemsPerPageOptions={itemsPerPageOptions}
+        onItemsPerPageChange={handleItemsPerPageChange}
+      />
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Account</th>
+            <th onClick={() => handleSort('date')}>Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('description')}>Description {sortConfig.key === 'description' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('amount')}>Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
+            <th onClick={() => handleSort('account_name')}>Account {sortConfig.key === 'account_name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}</th>
             <th>Type</th>
-            <th></th>
             <th>Budget</th>
-            <th></th>
             <th>Select</th>
             <th>Comments</th>
-            <th>Modify</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {filteredTransactions.map((transaction) => (
+          {transactions.map((transaction) => (
             <tr key={transaction.id}>
               <td>{transaction.date}</td>
               <td>{transaction.description}</td>
-              <td className={getAmountClass(transaction.amount)}>{transaction.amount}</td>
+              <td>{transaction.amount}</td>
               <td>{accountNames.find(a => a.id === transaction.account_name)?.name || 'Unknown'}</td>
               <td>
                 <select
                   value={transaction.transaction_type || ''}
-                  onChange={(e) => handleTypeChange(transaction.id, e.target.value)}
+                  onChange={(e) => handleModify(transaction.id, { transaction_type: e.target.value })}
                 >
-                  <option value="">Select Transaction Type</option>
+                  <option value="">Select Type</option>
                   {transactionTypes.map(type => (
                     <option key={type.id} value={type.id}>{type.name}</option>
                   ))}
                 </select>
               </td>
               <td>
-                {transaction.transaction_assignment_type === 'auto_unchecked' && <i className="fas fa-robot" title="Auto Unchecked"></i>}
-                {transaction.transaction_assignment_type === 'auto_checked' && <i className="fas fa-check-circle" title="Auto Checked"></i>}
-                {transaction.transaction_assignment_type === 'manual' && <i className="fas fa-user" title="Manual"></i>}
-              </td>
-              <td>
                 <select
                   value={transaction.budget_group || ''}
-                  onChange={(e) => handleBudgetChange(transaction.id, e.target.value)}
+                  onChange={(e) => handleModify(transaction.id, { budget_group: e.target.value })}
                 >
-                  <option value="">Select Budget Group</option>
+                  <option value="">Select Budget</option>
                   {budgetGroups.map(group => (
                     <option key={group.id} value={group.id}>{group.name}</option>
                   ))}
                 </select>
-              </td>
-              <td>
-                {transaction.budget_group_assignment_type === 'auto_unchecked' && <i className="fas fa-robot" title="Auto Unchecked"></i>}
-                {transaction.budget_group_assignment_type === 'auto_checked' && <i className="fas fa-check-circle" title="Auto Checked"></i>}
-                {transaction.budget_group_assignment_type === 'manual' && <i className="fas fa-user" title="Manual"></i>}
               </td>
               <td>
                 <input 
@@ -298,18 +212,22 @@ function TransactionReview() {
               <td>
                 <input
                   type="text"
-                  name={`comments-${transaction.id}`}
                   value={transaction.comments || ''}
-                  onChange={(e) => handleCommentChange(transaction.id, e.target.value, e.target.selectionStart)}
+                  onChange={(e) => handleModify(transaction.id, { comments: e.target.value })}
                 />
               </td>
               <td>
-                <button onClick={() => handleModify(transaction.id)}>Modify</button>
+                <button onClick={() => handleModify(transaction.id, { review_status: 'confirmed' })}>Confirm</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }
