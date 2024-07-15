@@ -85,7 +85,7 @@ class BudgetAdjustmentViewSet(viewsets.ModelViewSet):
 
 # Utility functions
 def parse_transaction_data(reader, import_format):
-    bank_formats = settings.settings.BANK_FORMATS.keys()
+    bank_formats = list(settings.BANK_FORMATS.keys())
     transaction_data = []
 
     if import_format == bank_formats[2]:
