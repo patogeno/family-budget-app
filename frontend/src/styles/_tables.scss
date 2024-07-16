@@ -1,0 +1,27 @@
+@import 'variables';
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid themed-color('accent');
+  }
+
+  th {
+    background-color: themed-color('accent');
+    color: themed-color('primary');
+    cursor: pointer;
+
+    &:hover {
+      background-color: darken(themed-color('accent'), 10%);
+    }
+  }
+
+  tr:nth-child(even) {
+    background-color: lighten(themed-color('secondary'), 5%);
+  }
+}

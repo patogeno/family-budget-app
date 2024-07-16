@@ -1,0 +1,19 @@
+@import '../variables';
+
+header {
+  background-color: themed-color('primary');
+  padding: 20px 40px;
+  color: themed-color('accent');
+  display: flex;
+  align-items: center;
+
+  h1 {
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+    padding: 20px 0;
+    border-bottom: 2px solid themed-color('accent');
+  }
+}

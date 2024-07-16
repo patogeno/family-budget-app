@@ -1,0 +1,57 @@
+@import '../variables';
+@import '../mixins';
+
+.transaction-review {
+  background-color: themed-color('secondary');
+  padding: 20px;
+  border-radius: 5px;
+  overflow-x: auto;
+
+  h2 {
+    color: themed-color('accent');
+    margin-bottom: 20px;
+  }
+
+  .bulk-actions {
+    margin-bottom: 20px;
+    text-align: right;
+
+    button {
+      margin-left: 10px;
+      @include button-style;
+      background-color: themed-color('accent');
+      color: themed-color('primary');
+
+      &:hover {
+        background-color: darken(themed-color('accent'), 10%);
+      }
+
+      &:disabled {
+        background-color: lighten(themed-color('accent'), 20%);
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  table {
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+
+    select, input[type="text"] {
+      @include input-style;
+    }
+
+    button {
+      @include button-style;
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+
+    .fas {
+      font-size: 16px;
+      color: themed-color('accent');
+    }
+  }
+}

@@ -1,0 +1,81 @@
+// Color variables
+$primary-color: #0f1624;
+$secondary-color: #1a2e47;
+$accent-color: #00e0ff;
+$warning-color: #ff003c;
+$highlight-color: #ff8a00;
+
+// Additional color combinations
+$theme-colors: (
+  'default': (
+    'primary': #0f1624,
+    'secondary': #1a2e47,
+    'accent': #00e0ff,
+    'warning': #ff003c,
+    'highlight': #ff8a00
+  ),
+  'clean': (
+    'primary': #ffffff,
+    'secondary': #f5f5f5,
+    'accent': #2c3e50,
+    'warning': #e74c3c,
+    'highlight': #3498db
+  ),
+  'warm': (
+    'primary': #4a3f35,
+    'secondary': #8c6d62,
+    'accent': #f4ebd0,
+    'warning': #d62828,
+    'highlight': #fe9920
+  ),
+  'cool': (
+    'primary': #0b132b,
+    'secondary': #1c2541,
+    'accent': #6fffe9,
+    'warning': #ff4d6d,
+    'highlight': #5bc0be
+  ),
+  'dark': (
+    'primary': #1a1a1a,
+    'secondary': #2a2a2a,
+    'accent': #ffcc00,
+    'warning': #ff003c,
+    'highlight': #ff8a00
+  ),
+  'neon': (
+    'primary': #000000,
+    'secondary': #1a1a1a,
+    'accent': #39ff14,
+    'warning': #ff00ff,
+    'highlight': #00ffff
+  ),
+  'pastel': (
+    'primary': #f7f1e3,
+    'secondary': #e6e2d3,
+    'accent': #40407a,
+    'warning': #ff5252,
+    'highlight': #34ace0
+  ),
+  'retro': (
+    'primary': #2c2c54,
+    'secondary': #706fd3,
+    'accent': #f7f1e3,
+    'warning': #ff9f1c,
+    'highlight': #32ff7e
+  ),
+  'spring': (
+    'primary': #f0f4f3,
+    'secondary': #c6def1,
+    'accent': #0b6e4f,
+    'warning': #bb3e03,
+    'highlight': #005f73
+  )
+);
+
+// Variable to store the selected theme
+$selected-theme: 'pastel' !default;
+
+// Function to get color from the selected theme
+@function themed-color($key) {
+  @return map-get(map-get($theme-colors, $selected-theme), $key);
+}

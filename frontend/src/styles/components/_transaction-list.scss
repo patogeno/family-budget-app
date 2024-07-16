@@ -1,0 +1,52 @@
+@import '../variables';
+@import '../mixins';
+
+.transaction-list {
+  background-color: themed-color('secondary');
+  padding: 20px;
+  border-radius: 5px;
+  overflow-x: auto;
+
+  h2 {
+    color: themed-color('accent');
+    margin-bottom: 20px;
+  }
+
+  .pagination {
+    @include flex-center;
+    margin-top: 20px;
+
+    button, span {
+      margin: 0 5px;
+      padding: 5px 10px;
+      background-color: themed-color('accent');
+      color: themed-color('primary');
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: darken(themed-color('accent'), 10%);
+      }
+
+      &.active {
+        background-color: darken(themed-color('accent'), 20%);
+      }
+
+      &:disabled {
+        background-color: lighten(themed-color('accent'), 20%);
+        cursor: not-allowed;
+      }
+    }
+
+    span {
+      background-color: transparent;
+      color: themed-color('accent');
+      cursor: default;
+
+      &:hover {
+        background-color: transparent;
+      }
+    }
+  }
+}

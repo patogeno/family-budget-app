@@ -1,0 +1,27 @@
+@import 'variables';
+@import 'mixins';
+
+button {
+  @include button-style;
+  background-color: themed-color('warning');
+  color: white;
+
+  &:hover {
+    background-color: darken(themed-color('warning'), 10%);
+  }
+
+  &:disabled {
+    background-color: lighten(themed-color('warning'), 20%);
+    cursor: not-allowed;
+  }
+}
+
+.clear-filters-btn {
+  @include button-style;
+  background-color: themed-color('warning');
+  color: themed-color('primary');
+
+  &:hover {
+    background-color: darken(themed-color('warning'), 10%);
+  }
+}
