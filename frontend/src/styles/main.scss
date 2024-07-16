@@ -424,9 +424,10 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 
   input, select {
-    width: 20%; // Adjusted to make room for the button
+    width: 15%;
     padding: 8px;
     border: 1px solid themed-color('accent');
     border-radius: 4px;
