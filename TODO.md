@@ -8,10 +8,11 @@
 - [X] Implement server-side pagination
 
 ## 2. API Documentation
-- [ ] Set up a tool for API documentation (e.g., Swagger/OpenAPI)
+- [X] Set up a tool for API documentation (e.g., Swagger/OpenAPI)
 - [ ] Document all existing API endpoints
 - [ ] Include request/response examples for each endpoint
 - [ ] Add authentication details to the API documentation
+- [ ] Add API documentation links to Frontend
 
 ## 3. Expand Testing
 - [ ] Set up a testing framework for the React frontend (e.g., Jest, React Testing Library)
