@@ -34,16 +34,25 @@ This is a web application for personal use to manage the family's fortnightly, m
 
 4. Visit `http://localhost:3000` in your browser to use the application.
 
+## API Documentation
+To generate the API documentation, run the following command:
+
+```
+python manage.py generate_api_docs
+```
+
+This will create or update the `docs/api_documentation.md` file with the latest API documentation.
+
 ## Documentation
 For more detailed information, please refer to the following documentation:
 
+- [API Documentation](docs/api_documentation.md)
 - [Import Formats](docs/import_formats.md)
 
 More documentation coming soon:
 - Getting Started
 - User Guide
 - Developer Guide
-- API Reference
 - Configuration
 - Deployment
 - Troubleshooting

@@ -26,7 +26,8 @@ echo 4. Run React frontend
 echo 5. Run Django server and React frontend
 echo 6. Concatenate Files
 echo 7. Generate Model Diagram
-echo 8. Exit
+echo 8. Write API_documentation.md
+echo 9. Exit
 
 set /p choice="Enter your choice: "
 
@@ -37,7 +38,8 @@ if "%choice%" == "4" goto RUN_FRONTEND
 if "%choice%" == "5" goto RUN_BOTH
 if "%choice%" == "6" goto CONCAT_ALL
 if "%choice%" == "7" goto GEN_DIAGRAM
-if "%choice%" == "8" goto END
+if "%choice%" == "8" goto WRITE_API_DOC
+if "%choice%" == "9" goto END
 echo Invalid choice. Please try again.
 goto MENU
 
@@ -68,6 +70,10 @@ goto MENU
 
 :GEN_DIAGRAM
 %PYTHON_PATH% %MANAGE_PY_PATH% generate_model_diagram
+goto MENU
+
+:WRITE_API_DOC
+%PYTHON_PATH% %MANAGE_PY_PATH% generate_api_docs
 goto MENU
 
 :END
