@@ -64,12 +64,13 @@ appToIgnore/
 # Ignore selection configuration JSON files
 file_selection_config.json
 asset_selection_config.json
+project_selection_config.json
 
 # Ignore concatenated output files
 concatenated_*.py
 concatenated_assets_*.txt
 concatenated_md_*.md
-folder_tree.txt
+folder_tree*.txt
 
 # Node.js
 node_modules/

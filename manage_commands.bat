@@ -63,9 +63,7 @@ start cmd /k "cd /d %REACT_FRONTEND_PATH% && npm start"
 goto MENU
 
 :CONCAT_ALL
-%PYTHON_PATH% %MANAGE_PY_PATH% concatenate_assets
-%PYTHON_PATH% %MANAGE_PY_PATH% concatenate_py_files
-%PYTHON_PATH% %MANAGE_PY_PATH% generate_folder_tree
+%PYTHON_PATH% %MANAGE_PY_PATH% concatenate_project
 goto MENU
 
 :GEN_DIAGRAM
