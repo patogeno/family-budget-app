@@ -2,33 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from pathlib import Path
 import datetime
 import json
-import fnmatch
-import os
-
-def parse_gitignore(gitignore_path):
-    ignore_patterns = []
-    if gitignore_path.exists():
-        with open(gitignore_path, 'r') as gitignore_file:
-            for line in gitignore_file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    ignore_patterns.append(line)
-    return ignore_patterns
-
-def should_ignore(file_path, ignore_patterns, root_dir):
-    relative_path = file_path.relative_to(root_dir)
-    
-    for pattern in ignore_patterns:
-        if pattern.startswith('/'):
-            if fnmatch.fnmatch(str(relative_path), pattern[1:]):
-                return True
-        elif pattern.endswith('/'):
-            if any(part == pattern[:-1] for part in relative_path.parts):
-                return True
-        elif fnmatch.fnmatch(str(relative_path), pattern) or \
-             any(fnmatch.fnmatch(part, pattern) for part in relative_path.parts):
-            return True
-    return False
+from budget.utils import parse_gitignore, should_ignore
 
 class Command(BaseCommand):
     help = 'Concatenates selected template, CSS, SCSS, and JS files into one file, and MD files into another.'
@@ -117,12 +91,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Successfully concatenated MD files into {output_file_md}'))
 
         # Debug output
-        self.stdout.write("Ignore patterns:")
-        for pattern in ignore_patterns:
-            self.stdout.write(f"  {pattern}")
-        self.stdout.write(f"Total files found: {len(all_files)}")
-        self.stdout.write(f"MD files: {len(md_files)}")
-        self.stdout.write(f"Other asset files: {len(other_files)}")
-        self.stdout.write("First 10 files:")
-        for file in all_files[:10]:
-            self.stdout.write(f"  {file}")
+        # self.stdout.write("Ignore patterns:")
+        # for pattern in ignore_patterns:
+        #     self.stdout.write(f"  {pattern}")
+        # self.stdout.write(f"Total files found: {len(all_files)}")
+        # self.stdout.write(f"MD files: {len(md_files)}")
+        # self.stdout.write(f"Other asset files: {len(other_files)}")
+        # self.stdout.write("First 10 files:")
+        # for file in all_files[:10]:
+        #     self.stdout.write(f"  {file}")

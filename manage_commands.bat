@@ -22,9 +22,9 @@ echo Select a command to run:
 echo 1. Make migrations
 echo 2. Migrate
 echo 3. Run Django server
-echo 4. Run Django server and React front end
-echo 5. Concatenate Assets
-echo 6. Concatenate Python files
+echo 4. Run React frontend
+echo 5. Run Django server and React frontend
+echo 6. Concatenate Files
 echo 7. Generate Model Diagram
 echo 8. Exit
 
@@ -33,9 +33,9 @@ set /p choice="Enter your choice: "
 if "%choice%" == "1" goto MAKEMIGRATIONS
 if "%choice%" == "2" goto MIGRATE
 if "%choice%" == "3" goto RUNSERVER
-if "%choice%" == "4" goto RUN_BOTH
-if "%choice%" == "5" goto CONCAT_ASSETS
-if "%choice%" == "6" goto CONCAT_PYTHON
+if "%choice%" == "4" goto RUN_FRONTEND
+if "%choice%" == "5" goto RUN_BOTH
+if "%choice%" == "6" goto CONCAT_ALL
 if "%choice%" == "7" goto GEN_DIAGRAM
 if "%choice%" == "8" goto END
 echo Invalid choice. Please try again.
@@ -50,7 +50,11 @@ goto MENU
 goto MENU
 
 :RUNSERVER
-%PYTHON_PATH% %MANAGE_PY_PATH% runserver
+start cmd /k "%PYTHON_PATH% %MANAGE_PY_PATH% runserver"
+goto MENU
+
+:RUN_FRONTEND
+start cmd /k "cd /d %REACT_FRONTEND_PATH% && npm start"
 goto MENU
 
 :RUN_BOTH
@@ -58,12 +62,10 @@ start cmd /k "%PYTHON_PATH% %MANAGE_PY_PATH% runserver"
 start cmd /k "cd /d %REACT_FRONTEND_PATH% && npm start"
 goto MENU
 
-:CONCAT_ASSETS
+:CONCAT_ALL
 %PYTHON_PATH% %MANAGE_PY_PATH% concatenate_assets
-goto MENU
-
-:CONCAT_PYTHON
 %PYTHON_PATH% %MANAGE_PY_PATH% concatenate_py_files
+%PYTHON_PATH% %MANAGE_PY_PATH% generate_folder_tree
 goto MENU
 
 :GEN_DIAGRAM

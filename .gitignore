@@ -69,6 +69,7 @@ asset_selection_config.json
 concatenated_*.py
 concatenated_assets_*.txt
 concatenated_md_*.md
+folder_tree.txt
 
 # Node.js
 node_modules/

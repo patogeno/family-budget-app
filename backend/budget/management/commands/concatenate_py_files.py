@@ -2,36 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from pathlib import Path
 import datetime
 import json
-import fnmatch
-import os
-
-def parse_gitignore(gitignore_path):
-    ignore_patterns = []
-    if gitignore_path.exists():
-        with open(gitignore_path, 'r') as gitignore_file:
-            for line in gitignore_file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    ignore_patterns.append(line)
-    return ignore_patterns
-
-def should_ignore(file_path, ignore_patterns, root_dir):
-    relative_path = file_path.relative_to(root_dir)
-    
-    for pattern in ignore_patterns:
-        # Handle patterns starting with '/'
-        if pattern.startswith('/'):
-            if fnmatch.fnmatch(str(relative_path), pattern[1:]):
-                return True
-        # Handle directory patterns ending with '/'
-        elif pattern.endswith('/'):
-            if any(part == pattern[:-1] for part in relative_path.parts):
-                return True
-        # Handle file patterns and patterns with wildcards
-        elif fnmatch.fnmatch(str(relative_path), pattern) or \
-             any(fnmatch.fnmatch(part, pattern) for part in relative_path.parts):
-            return True
-    return False
+from budget.utils import parse_gitignore, should_ignore
 
 class Command(BaseCommand):
     help = 'Concatenates selected Python files into a single output file.'
@@ -104,10 +75,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Successfully concatenated files into {output_file}'))
 
         # Debug output
-        self.stdout.write("Ignore patterns:")
-        for pattern in ignore_patterns:
-            self.stdout.write(f"  {pattern}")
-        self.stdout.write(f"Total Python files found: {len(all_files)}")
-        self.stdout.write("First 10 Python files:")
-        for file in all_files[:10]:
-            self.stdout.write(f"  {file}")
+        # self.stdout.write("Ignore patterns:")
+        # for pattern in ignore_patterns:
+        #     self.stdout.write(f"  {pattern}")
+        # self.stdout.write(f"Total Python files found: {len(all_files)}")
+        # self.stdout.write("First 10 Python files:")
+        # for file in all_files[:10]:
+        #     self.stdout.write(f"  {file}")
