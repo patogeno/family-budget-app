@@ -10,9 +10,35 @@ import io
 from ..models import Transaction, AccountName, TransactionPattern, TransactionType, BudgetGroup
 from ..serializers import TransactionSerializer
 from ..utils import categorize_transaction, parse_transaction_data, detect_duplicates
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
+@swagger_auto_schema(
+    method='post',
+    operation_description="Import transactions from a CSV file",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'file': openapi.Schema(type=openapi.TYPE_FILE),
+            'import_format': openapi.Schema(type=openapi.TYPE_STRING, enum=list(settings.BANK_FORMATS.keys())),
+            'account_name': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'new_account_name': openapi.Schema(type=openapi.TYPE_STRING),
+        },
+        required=['file', 'import_format']
+    ),
+    responses={
+        201: openapi.Response(description="Transactions imported successfully"),
+        400: openapi.Response(description="Bad request")
+    }
+)
 @api_view(['POST'])
 def import_transactions(request):
+    """
+    Import transactions from a CSV file.
+    
+    This view handles the import of transactions from a CSV file. It supports various bank formats
+    and can either use an existing account name or create a new one.
+    """
     file = request.FILES.get('file')
     import_format = request.data.get('import_format')
     account_name_id = request.data.get('account_name')
@@ -22,12 +48,15 @@ def import_transactions(request):
         return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     if import_format not in settings.BANK_FORMATS.keys():
-        return Response({'error': 'Import format not specified'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid import format'}, status=status.HTTP_400_BAD_REQUEST)
 
     if new_account_name:
         account_name, _ = AccountName.objects.get_or_create(name=new_account_name)
     elif account_name_id:
-        account_name = AccountName.objects.get(id=account_name_id)
+        try:
+            account_name = AccountName.objects.get(id=account_name_id)
+        except AccountName.DoesNotExist:
+            return Response({'error': 'Invalid account name'}, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response({'error': 'Account name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -69,8 +98,30 @@ def import_transactions(request):
 
     return Response({'message': 'Transactions imported successfully'}, status=status.HTTP_201_CREATED)
 
+@swagger_auto_schema(
+    method='post',
+    operation_description="Import transaction patterns from a CSV file",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'file': openapi.Schema(type=openapi.TYPE_FILE),
+            'account_name': openapi.Schema(type=openapi.TYPE_INTEGER),
+        },
+        required=['file', 'account_name']
+    ),
+    responses={
+        201: openapi.Response(description="Transaction patterns imported successfully"),
+        400: openapi.Response(description="Bad request")
+    }
+)
 @api_view(['POST'])
 def import_transaction_patterns(request):
+    """
+    Import transaction patterns from a CSV file.
+    
+    This view handles the import of transaction patterns from a CSV file. It associates
+    the patterns with a specific account name.
+    """
     file = request.FILES.get('file')
     account_name_id = request.data.get('account_name')
 
@@ -80,7 +131,10 @@ def import_transaction_patterns(request):
     if not account_name_id:
         return Response({'error': 'Account name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    account_name = AccountName.objects.get(id=account_name_id)
+    try:
+        account_name = AccountName.objects.get(id=account_name_id)
+    except AccountName.DoesNotExist:
+        return Response({'error': 'Invalid account name'}, status=status.HTTP_400_BAD_REQUEST)
 
     csv_file = io.StringIO(file.read().decode('utf-8-sig'))
     reader = csv.DictReader(csv_file)
