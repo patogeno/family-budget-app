@@ -10,6 +10,7 @@ This is a web application for personal use to manage the family's fortnightly, m
 - Manual review and modification of auto-categorized transactions
 - Customizable transaction patterns for automatic categorization
 - User-friendly interface with React frontend
+- Database backup and restore functionality
 
 ## Quick Start
 1. Clone the repository:
@@ -33,6 +34,26 @@ This is a web application for personal use to manage the family's fortnightly, m
    ```
 
 4. Visit `http://localhost:3000` in your browser to use the application.
+
+## Database Backup and Restore
+
+### Backing up the Database
+To create a backup of your database, use the following command:
+
+```
+python manage.py backup_database
+```
+
+This will create a JSON file in the `database_backups` directory with a timestamp in the filename.
+
+### Restoring the Database
+To restore your database from a backup, use the following command:
+
+```
+python manage.py restore_database path/to/your/backup_file.json
+```
+
+Note: This process will flush your current database before restoring the backup. Make sure you have a backup of any important data before proceeding.
 
 ## API Documentation
 To generate the API documentation, run the following command:

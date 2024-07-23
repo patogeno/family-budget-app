@@ -51,6 +51,7 @@ venv.bak/
 *.db
 *.postgresql
 *.dump
+database_backups/
 
 # Static and Media files
 staticfiles/
